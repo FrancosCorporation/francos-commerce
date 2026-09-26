@@ -7,7 +7,7 @@
 
 A complete e-commerce: storefront + cart + **Stripe test-mode checkout** + orders,
 inventory and an **admin panel with roles** — full transactional domain, from
-browsing to fulfillment.
+browsing to fulfillment. Single stack (Next.js + Node), zero paid services in the demo.
 
 > 🇧🇷 E-commerce completo: vitrine + carrinho + **checkout Stripe (modo teste)** +
 > pedidos, estoque e **painel administrativo com papéis** — o domínio transacional
@@ -16,12 +16,8 @@ browsing to fulfillment.
 ## Why this project matters
 
 E-commerce is the densest business domain a junior/mid dev can show: cart state,
-checkout idempotency, stock race conditions, order states. This project merges two
-of my working repos — the Next.js storefront
-([doben_eccomerce_store](https://github.com/FrancosCorporation/doben_eccomerce_store),
-boot HTTP 200) and the .NET sales API
-([api_loja_venda_app](https://github.com/FrancosCorporation/api_loja_venda_app), 0 build errors)
-— following the UX standards of the best open-source commerce front-end.
+checkout idempotency, stock race conditions, order states. Built on a Next.js
+storefront foundation with a Node API — one stack, one deploy.
 
 ## Features (roadmap)
 
@@ -49,8 +45,8 @@ docker compose up   # storefront + api + db
 
 - [vercel/commerce](https://github.com/vercel/commerce) (MIT, 14k⭐) — storefront
   patterns: product pages, cart UX, SEO
-- My working foundations: doben_eccomerce_store (Next.js storefront),
-  api_loja_venda_app (.NET sales API), api_django_vendas (domain patterns)
+- Foundations: Next.js storefront patterns (from my public e-commerce experiments)
+- Node API single-stack decision documented in the repo ADR
 
 ## License
 
