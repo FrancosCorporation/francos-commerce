@@ -1,0 +1,12 @@
+{
+  "name": "francos-commerce",
+  "version": "0.1.0",
+  "description": "E-commerce full-stack single-stack: produtos CRUD + carrinho + checkout + maquina de estados do pedido",
+  "main": "server.js",
+  "type": "module",
+  "license": "MIT",
+  "author": "Rodolfo Franco (FrancosCorporation)",
+  "scripts": { "start": "node server.js", "test": "NODE_ENV=test node --test test/loja-test.mjs" },
+  "dependencies": { "express": "^4.21.0" },
+  "engines": { "node": ">=22.5.0" }
+}

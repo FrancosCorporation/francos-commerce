@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FrancosCommerce</title>
+  <style>
+    :root { --fundo:#0f1318; --carta:#1a2027; --borda:#2c3540; --texto:#e8edf2; --suave:#8b98a5; --verde:#2ea043; --azul:#388bfd; --amarelo:#d29922; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:"Segoe UI",system-ui,Arial,sans-serif; background:var(--fundo); color:var(--texto); min-height:100vh; }
+    header { padding:16px 20px; border-bottom:1px solid var(--borda); display:flex; align-items:center; gap:14px; }
+    header h1 { font-size:20px; margin-right:auto; }
+    header button { background:var(--borda); border:none; color:var(--texto); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; }
+    header button:hover { background:var(--azul); }
+    #app { max-width:1000px; margin:0 auto; padding:20px; }
+    .vitrine { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+    .produto { background:var(--carta); border:1px solid var(--borda); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:8px; }
+    .produto h2 { font-size:15px; }
+    .produto .desc { color:var(--suave); font-size:12px; }
+    .produto .preco { font-size:18px; font-weight:700; color:var(--verde); }
+    .produto .estoque { font-size:11px; color:var(--suave); }
+    .produto button { background:var(--verde); border:none; color:#fff; font-weight:700; border-radius:8px; padding:10px; cursor:pointer; }
+    .produto button:disabled { background:var(--borda); cursor:default; }
+    .carrinho { position:fixed; right:16px; top:70px; width:min(320px,90vw); background:var(--carta); border:1px solid var(--borda); border-radius:12px; padding:16px; display:none; z-index:5; }
+    .carrinho.aberto { display:block; }
+    .carrinho h2 { font-size:15px; margin-bottom:10px; }
+    .item { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--borda); }
+    .total { font-size:16px; font-weight:700; padding:8px 0; }
+    .carrinho button { width:100%; margin-top:8px; }
+    .checkout-form { display:none; flex-direction:column; gap:8px; margin-top:10px; }
+    .checkout-form.aberto { display:flex; }
+    .checkout-form input { background:var(--fundo); border:1px solid var(--borda); color:var(--texto); border-radius:6px; padding:8px 10px; font-size:13px; }
+    .ok { color:var(--verde); font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛒 FrancosCommerce</h1>
+    <button onclick="toggleCarrinho()">🛍️ Carrinho (<span id="carrinho-n">0</span>)</button>
+  </header>
+  <div id="app">
+    <div class="vitrine" id="vitrine"></div>
+  </div>
+  <div class="carrinho" id="carrinho">
+    <h2>🛍️ Seu carrinho</h2>
+    <div id="itens"></div>
+    <div class="total">Total: R$ <span id="total">0,00</span></div>
+    <input id="cli-nome" placeholder="seu nome">
+    <input id="cli-email" type="email" placeholder="seu e-mail">
+    <button onclick="abrirCheckout()" style="background:var(--azul)">Ir para o checkout</button>
+    <div class="checkout-form" id="checkout">
+      <small style="color:var(--suave)">Modo teste — o checkout confirma o pedido (sem cobrança real).</small>
+      <button onclick="finalizar()">✅ Confirmar pedido</button>
+      <p id="checkout-ok" class="ok" hidden></p>
+    </div>
+  </div>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    let carrinho = []; // { produtoId, nome, preco, quantidade }
+
+    async function carregarVitrine() {
+      const produtos = await fetch('/api/produtos').then((r) => r.json());
+      document.getElementById('vitrine').innerHTML = produtos.map((p) => `
+        <div class="produto">
+          <h2>${p.nome}</h2>
+          <span class="desc">${p.descricao}</span>
+          <span class="preco">R$ ${p.preco.toFixed(2).replace('.', ',')}</span>
+          <span class="estoque">${p.estoque} em estoque</span>
+          <button ${p.estoque === 0 ? 'disabled' : ''} onclick="add('${p.id}', '${p.nome}', ${p.preco})">${p.estoque === 0 ? 'esgotado' : 'Adicionar ao carrinho'}</button>
+        </div>`).join('');
+    }
+    function add(id, nome, preco) {
+      const tem = carrinho.find((i) => i.produtoId === id);
+      if (tem) tem.quantidade++;
+      else carrinho.push({ produtoId: id, nome, preco, quantidade: 1 });
+      renderCarrinho();
+    }
+    function renderCarrinho() {
+      document.getElementById('carrinho-n').textContent = carrinho.reduce((t, i) => t + i.quantidade, 0);
+      document.getElementById('itens').innerHTML = carrinho.map((i, idx) => `
+        <div class="item"><span>${i.quantidade}× ${i.nome}</span>
+          <span><a href="#" onclick="rm(${idx})" style="color:var(--vermelho)">✕</a> R$ ${(i.preco * i.quantidade).toFixed(2).replace('.', ',')}</span>
+        </div>`).join('') || '<small style="color:var(--suave)">vazio</small>';
+      document.getElementById('total').textContent = carrinho.reduce((t, i) => t + i.preco * i.quantidade, 0).toFixed(2).replace('.', ',');
+    }
+    function rm(idx) { carrinho.splice(idx, 1); renderCarrinho(); }
+    function toggleCarrinho() { document.getElementById('carrinho').classList.toggle('aberto'); }
+    function abrirCheckout() {
+      if (!carrinho.length) return alert('carrinho vazio');
+      document.getElementById('checkout').classList.add('aberto');
+    }
+    async function finalizar() {
+      const nome = document.getElementById('cli-nome').value.trim();
+      const email = document.getElementById('cli-email').value.trim();
+      if (!nome || !email) return alert('preencha nome e e-mail');
+      const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clienteEmail: email, clienteNome: nome, itens: carrinho }) });
+      const dados = await r.json();
+      if (r.status === 201) {
+        const ok = document.getElementById('checkout-ok');
+        ok.hidden = false;
+        ok.textContent = `✅ Pedido ${dados.id} criado! Total: R$ ${dados.total.toFixed(2).replace('.', ',')}`;
+        carrinho = [];
+        renderCarrinho();
+        carregarVitrine();
+      } else {
+        alert(dados.erro?.mensagem || 'erro no checkout');
+      }
+    }
+    carregarVitrine();
+  </script>
+</body>
+</html>

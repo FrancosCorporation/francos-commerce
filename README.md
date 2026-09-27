@@ -1,6 +1,7 @@
 # FrancosCommerce — Full-stack E-commerce
 
-![Status](https://img.shields.io/badge/status-em%20constru%C3%A7%C3%A3o-orange)
+![Status](https://img.shields.io/badge/M1-funcionando%20(6%2F6%20testes)-brightgreen)
+![CI](https://img.shields.io/badge/CI-test%20%2B%20license%20check-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![Stripe](https://img.shields.io/badge/Stripe-test%20mode-635BFF?logo=stripe)
 ![License](https://img.shields.io/badge/license-MIT-green)
