@@ -1,63 +1,93 @@
-# FrancosCommerce — Full-stack E-commerce
+# FrancosCommerce
 
-![Status](https://img.shields.io/badge/M1-funcionando%20(6%2F6%20testes)-brightgreen)
-![CI](https://img.shields.io/badge/CI-test%20%2B%20license%20check-blue)
-![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
-![Stripe](https://img.shields.io/badge/Stripe-test%20mode-635BFF?logo=stripe)
-![License](https://img.shields.io/badge/license-MIT-green)
+Loja demonstrativa em Node.js, Express e SQLite. Ela reúne uma vitrine pública, carrinho, checkout de demonstração e uma área administrativa para produtos e pedidos.
 
-A complete e-commerce: storefront + cart + **Stripe test-mode checkout** + orders,
-inventory and an **admin panel with roles** — full transactional domain, from
-browsing to fulfillment. Single stack (Next.js + Node), zero paid services in the demo.
+O checkout cria o pedido e reserva o estoque, mas **não cobra o cliente**. Não há integração com Stripe ou outro gateway de pagamento.
 
-> 🇧🇷 E-commerce completo: vitrine + carrinho + **checkout Stripe (modo teste)** +
-> pedidos, estoque e **painel administrativo com papéis** — o domínio transacional
-> inteiro, da navegação ao pós-venda.
+## Requisitos
 
-## Why this project matters
+- Node.js 22.5 ou mais recente (`node:sqlite` é usado pelo domínio)
+- npm
+- Docker e Docker Compose, caso prefira executar em contêiner
 
-E-commerce is the densest business domain a junior/mid dev can show: cart state,
-checkout idempotency, stock race conditions, order states. Built on a Next.js
-storefront foundation with a Node API — one stack, one deploy.
-
-## Features (roadmap)
-
-- [ ] **M1** — Storefront, product catalog, cart, Stripe test checkout, persisted orders
-- [ ] **M2** — Admin panel: products, inventory, orders, customer search, roles
-- [ ] **M3** — E2E purchase-flow tests, catalog seed, demo deploy
-
-## Architecture
-
-```mermaid
-graph LR
-  A[Next.js storefront] --> B[Sales API]
-  B --> C[(Postgres/Mongo)]
-  B --> D[Stripe test-mode]
-  E[Admin panel + roles] --> B
-```
-
-## Quick start (planned)
+## Executar localmente
 
 ```bash
-docker compose up   # storefront + api + db
+cp .env.example .env
 ```
 
-## Built with
+Preencha `JWT_SECRET` com um valor aleatório de pelo menos 32 bytes e configure `ADMIN_EMAIL` e `ADMIN_PASSWORD`. A senha inicial deve ter de 12 a 128 caracteres. Por exemplo, gere o segredo com:
 
-- [vercel/commerce](https://github.com/vercel/commerce) (MIT, 14k⭐) — storefront
-  patterns: product pages, cart UX, SEO
-- Foundations: Next.js storefront patterns (from my public e-commerce experiments)
-- Node API single-stack decision documented in the repo ADR
+```bash
+openssl rand -hex 32
+```
 
-## License
+Instale as dependências e inicie carregando o arquivo de ambiente:
 
-MIT — Rodolfo Franco ([FrancosCorporation](https://github.com/FrancosCorporation))
+```bash
+npm ci
+node --env-file=.env server.js
+```
 
----
+A loja fica em <http://localhost:3200>. O primeiro início cria o administrador a partir das variáveis de ambiente. Depois que houver uma conta administrativa no banco, `ADMIN_EMAIL` e `ADMIN_PASSWORD` podem ser removidas do ambiente. `JWT_SECRET` continua obrigatório em todos os inícios.
 
-### 🇧🇷 Sobre (PT-BR)
+## Executar com Docker Compose
 
-E-commerce full-stack unificando meus projetos funcionais (loja Next.js + API de vendas
-.NET) com os padrões de UX do vercel/commerce. Checkout Stripe em modo teste, estoque,
-pedidos, painel admin com papéis e testes e2e do fluxo de compra. Roadmap de 3 milestones
-no PROJETOS_RH.md do workspace.
+```bash
+cp .env.example .env
+```
+
+Defina `JWT_SECRET`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` em `.env` e execute:
+
+```bash
+docker compose up --build
+```
+
+O serviço publica a porta apenas em `127.0.0.1` por padrão. O banco fica no volume persistente `dados`. Para acesso externo, use um proxy reverso com TLS e controles de acesso adequados.
+
+## Experiência da loja
+
+- `Área da loja` abre o login administrativo.
+- A vitrine, o carrinho e o checkout são públicos.
+- O painel administrativo permite criar, editar e remover produtos, consultar indicadores e atualizar o estado dos pedidos.
+- Pedidos seguem `criado → pago → enviado → entregue`; pedidos `criado` ou `pago` também podem ser cancelados.
+- Remover um produto o oculta do catálogo e mantém os dados necessários ao histórico dos pedidos.
+- Valores monetários são armazenados em centavos inteiros. O cliente envia apenas identificadores e quantidades; o servidor consulta preços e estoque no banco.
+
+## API
+
+| Método e caminho | Acesso | Uso |
+|---|---|---|
+| `GET /api/produtos` | Público | Listar produtos ativos |
+| `POST /api/checkout` | Público | Criar pedido e reservar estoque |
+| `POST /api/admin/login` | Público, com limite de tentativas | Entrar na área administrativa |
+| `POST /api/produtos` | Administrador | Criar produto |
+| `PATCH /api/produtos/:id` | Administrador | Editar produto |
+| `DELETE /api/produtos/:id` | Administrador | Ocultar produto |
+| `GET /api/pedidos` | Administrador | Consultar pedidos |
+| `POST /api/pedidos/:id/:acao` | Administrador | Atualizar estado do pedido |
+| `GET /api/metricas` | Administrador | Consultar contagens e receita registrada |
+
+As rotas administrativas exigem `Authorization: Bearer <token>`. O token expira após 12 horas. O checkout aceita de 1 a 50 itens, quantidades inteiras, nome e e-mail válidos; há limites de tentativas por IP e e-mail.
+
+O painel e a API usam a mesma origem. CORS não é habilitado. A receita registrada exclui pedidos cancelados e representa os pedidos no banco, não pagamentos efetivamente processados.
+
+## Dados locais
+
+`COMMERCE_DB` define o caminho do SQLite; por padrão, o arquivo é `francos-commerce.db`. Arquivos de banco, segredos e `.env` ficam fora do Git. Faça cópias de segurança do banco antes de atualizações importantes. A aplicação migra os valores monetários legados para centavos durante a inicialização e interrompe o início se encontrar valores inválidos.
+
+## Desenvolvimento
+
+```bash
+npm test
+```
+
+O comando acima executa a suíte existente do domínio. A autenticação e as rotas HTTP não têm cobertura automatizada neste momento.
+
+## Segurança
+
+Consulte [SECURITY.md](SECURITY.md) para os controles existentes, limites conhecidos e instruções de relato privado.
+
+## Licença
+
+MIT. Consulte [LICENSE](LICENSE).

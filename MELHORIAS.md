@@ -531,3 +531,17 @@ git ls-files | grep -c '\\.db$'   # 0
 
 *Fim do plano. Gerado por leitura direta do código em 2026-10-02. Nenhum item já estava corrigido*
 *— todos apontam para defeitos ainda presentes.*
+
+## 11. Registro de execução · 2026-10-11
+
+Implementações feitas nesta rodada:
+
+- **SEC-05, SEC-01, SEC-02 e SEC-04:** autenticação administrativa com BCrypt/JWT, sem cadastro público, segredo obrigatório e rotas administrativas protegidas. Transições guardam administrador e data.
+- **SEC-03:** listagem global de pedidos protegida. Consulta de pedido pelo próprio cliente continua fora da API; o cliente não recebe uma rota de leitura individual.
+- **SEC-06 e SEC-07:** limites de login e checkout por IP/e-mail e validação de nome, e-mail, itens e quantidades.
+- **BUG-01, BUG-02, BUG-03, BUG-04 e BUG-05:** reserva transacional de estoque, validação de produto, `404` para produto ausente, valores em centavos e remoção lógica para preservar histórico.
+- **IMP-02:** Helmet e política de conteúdo compatível com CSS/JavaScript externos. **IMP-01:** a aplicação continua same-origin e essa decisão está documentada; CORS não foi habilitado.
+- **DOC-01, DOC-02, DEVOPS-01 e DEVOPS-02:** README e `SECURITY.md` atualizados, `.env.example` adicionado e o banco removido do índice do Git. O arquivo `francos-commerce.db` local foi preservado.
+- A vitrine agora tem layout responsivo, carrinho e checkout demonstrativo. O painel administra catálogo, pedidos e indicadores; valores dinâmicos são escritos pelo DOM com `textContent`.
+
+Não foram adicionados nem executados testes automatizados nesta rodada. Os itens `TEST-01` e `TEST-02` e a validação final permanecem pendentes; as caixas da DoD continuam desmarcadas até haver validação. O checkout segue sem gateway de pagamento e sem consulta individual de pedidos pelo cliente.
