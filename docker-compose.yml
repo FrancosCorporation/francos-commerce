@@ -2,9 +2,13 @@ services:
   commerce:
     build: .
     ports:
-      - "3200:3200"
+      - "127.0.0.1:${PORT:-3200}:${PORT:-3200}"
     environment:
-      COMMERCE_DB: /data/loja.db
+      PORT: ${PORT:-3200}
+      COMMERCE_DB: /data/francos-commerce.db
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no ambiente ou no arquivo .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - dados:/data
     restart: unless-stopped
