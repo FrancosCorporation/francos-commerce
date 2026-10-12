@@ -3,9 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 
-const SEGREDO = process.env.JWT_SECRET ?? (
-  process.env.NODE_ENV === 'test' ? 'francos-commerce-test-only-secret-min-32-bytes' : undefined
-);
+const SEGREDO = process.env.JWT_SECRET;
 if (!SEGREDO || Buffer.byteLength(SEGREDO, 'utf8') < 32) {
   throw new Error('JWT_SECRET ausente ou curto — defina um segredo com pelo menos 32 bytes.');
 }

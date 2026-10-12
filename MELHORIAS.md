@@ -1,10 +1,12 @@
 # MELHORIAS — francos-commerce
 
-> **Gerado por análise de código em 2026-10-02** · Stack: Node 22 (Express + `node:sqlite`), **sem** JWT/BCrypt
+> **Diagnóstico inicial de 2026-10-02; histórico abaixo.** A implementação foi retomada e reavaliada em 2026-10-11. O estado atual está registrado na §11. Stack atual: Node 22 (Express + `node:sqlite`), JWT/BCrypt.
 > Branch `main` · base `6bb837e` (M1: vitrine + carrinho + checkout com rollback + máquina de estados, 6/6 testes) · 366 LOC · **1 suite** · CI presente
 >
 > **Este arquivo é um plano de execução.** Cada item tem ID, `arquivo:linha`, mudança exata,
 > critério de aceite e comando de verificação.
+
+> **Leitura do estado:** as seções §1–§9 registram o diagnóstico original, não o estado atual. Use a DoD reconciliada na §10 e o registro cronológico da §11 para retomar o trabalho.
 
 ---
 
@@ -493,32 +495,34 @@ qualquer teste que escreva banco.
 
 ## 10. Definição de pronto (DoD)
 
+> Atualizado em 2026-10-11 após reauditoria estática. `[x]` significa implementação localizada no código/documentação; não significa que rotas ou fluxos foram exercitados. As validações de teste continuam pendentes.
+
 **Segurança**
-- [ ] `SEC-05` — JWT + BCrypt + tabela `admins`; sem env, falha alto
-- [ ] `SEC-01` — CRUD de produto e métricas exigem admin
-- [ ] `SEC-02` — transição de pedido exige admin e registra autor
-- [ ] `SEC-03` — listagem de pedidos exige admin; cliente só vê o próprio
-- [ ] `SEC-04` — PATCH de produto exige admin e revalida
-- [ ] `SEC-06` — 21º checkout na hora → `429`
-- [ ] `SEC-07` — e-mail inválido → `400`
+- [x] `SEC-05` — JWT + BCrypt + tabela `admins`; sem segredo, falha alto
+- [x] `SEC-01` — CRUD de produto e métricas exigem admin
+- [x] `SEC-02` — transição de pedido exige admin e registra autor
+- [x] `SEC-03` — listagem global de pedidos exige admin; consulta individual de cliente não existe
+- [x] `SEC-04` — PATCH de produto exige admin e revalida
+- [x] `SEC-06` — checkout limitado por IP e e-mail; comportamento HTTP não exercitado
+- [x] `SEC-07` — valida e-mail, nome, itens e quantidades no checkout
 
 **Funcional**
-- [ ] `BUG-01` — 20 checkouts concorrentes com estoque=1 → 1 sucesso, estoque 0 (nunca −1)
-- [ ] `BUG-02` — `preco: -1` no PATCH → `400`
-- [ ] `BUG-03` — PATCH de inexistente → `404`
-- [ ] `BUG-04` — valores em centavos; 0,10+0,20 = 30 exatos
-- [ ] `BUG-05` — produto com histórico não é apagado fisicamente
-- [ ] `IMP-03` — `quantidade: 2.5` → `400`
+- [x] `BUG-01` — checkout transacional e reserva condicional de estoque
+- [x] `BUG-02` — PATCH rejeita preço inválido
+- [x] `BUG-03` — produto inexistente retorna erro `404`
+- [x] `BUG-04` — valores monetários são armazenados em centavos inteiros
+- [x] `BUG-05` — remoção lógica preserva histórico de pedidos
+- [x] `IMP-03` — checkout rejeita quantidades não inteiras
 
 **Testes e infra**
 - [ ] `TEST-01` — 11/11 (6 núcleo + 5 rota)
 - [ ] `TEST-02` — concorrência de estoque verde
-- [ ] `IMP-02` — headers do `helmet` presentes
-- [ ] `IMP-01` — CORS documentado (same-origin hoje)
-- [ ] `DEVOPS-01` — nenhum `.db` no índice
-- [ ] `DEVOPS-02` — `.env.example` com as 5 variáveis
-- [ ] `DOC-01` — README diz o que é público
-- [ ] `DOC-02` — `SECURITY.md` com as 2 invariantes
+- [x] `IMP-02` — Helmet e política de conteúdo configurados
+- [x] `IMP-01` — arquitetura same-origin documentada; CORS não habilitado
+- [x] `DEVOPS-01` — nenhum banco no índice; banco local ignorado
+- [x] `DEVOPS-02` — `.env.example` documenta as cinco variáveis
+- [x] `DOC-01` — README documenta rotas públicas e administrativas
+- [x] `DOC-02` — `SECURITY.md` documenta controles e limites conhecidos
 
 **Validação final:**
 ```bash
@@ -544,4 +548,13 @@ Implementações feitas nesta rodada:
 - **DOC-01, DOC-02, DEVOPS-01 e DEVOPS-02:** README e `SECURITY.md` atualizados, `.env.example` adicionado e o banco removido do índice do Git. O arquivo `francos-commerce.db` local foi preservado.
 - A vitrine agora tem layout responsivo, carrinho e checkout demonstrativo. O painel administra catálogo, pedidos e indicadores; valores dinâmicos são escritos pelo DOM com `textContent`.
 
-Não foram adicionados nem executados testes automatizados nesta rodada. Os itens `TEST-01` e `TEST-02` e a validação final permanecem pendentes; as caixas da DoD continuam desmarcadas até haver validação. O checkout segue sem gateway de pagamento e sem consulta individual de pedidos pelo cliente.
+Não foram adicionados nem executados testes automatizados nesta rodada. Os itens `TEST-01` e `TEST-02` e a validação final permanecem pendentes; a DoD foi reconciliada na reauditoria abaixo. O checkout segue sem gateway de pagamento e sem consulta individual de pedidos pelo cliente.
+
+### Reauditoria e endurecimento adicional · 2026-10-11
+
+- Reconciliada a DoD histórica com o código atual: os itens de segurança, domínio, infraestrutura e documentação acima estão implementados; as caixas de testes e a validação de runtime permanecem abertas.
+- `src/auth.js` não aceita mais um JWT secreto conhecido quando `NODE_ENV=test`. O script `npm test` deixou de definir esse ambiente, pois a suíte atual importa somente o domínio e não inicia servidor nem autenticação. `JWT_SECRET` continua obrigatório sempre que o módulo de autenticação é carregado.
+- `.dockerignore` já exclui `.env`, bancos SQLite, `node_modules` e `.git`; conferido nesta reauditoria, sem alteração necessária.
+- Limites operacionais ainda conhecidos: rate limiting é em memória e local ao processo; checkout não consulta pedidos individuais nem processa pagamentos; uso público requer proxy TLS e estratégia de backup do SQLite. A validação HTTP, a cobertura de rotas/autenticação e a concorrência continuam pendentes.
+- Verificações: `node --check` em `server.js`, `src/loja.js` e `src/auth.js`; parse de `package.json` e `package-lock.json`; `git diff --check`; `npm audit` e `npm audit --omit=dev` — tudo passou, auditorias sem vulnerabilidades.
+- Não executei testes, servidor ou deploy. A validação HTTP e a cobertura de autenticação/concorrência permanecem pendentes.
